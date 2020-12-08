@@ -1,0 +1,27 @@
+from faker import Faker
+from faker_vehicle import VehicleProvider
+import time
+import random
+import redis
+import json
+
+fake = Faker()
+fake.add_provider(VehicleProvider)
+
+r = redis.Redis(host="redis-19208.c12.us-east-1-4.ec2.cloud.redislabs.com", port=19208, db=0, password="Senac_2020")
+
+while(True):
+  output = {
+    "id": fake.numerify(text="id-%#%#"),
+    "nome": fake.name(),
+    "telefone": fake.numerify(text="(%%) 9%%%%-%%%%"),
+    "email": fake.ascii_safe_email(),
+    "endereco": fake.address(),
+    "veiculo_placa": fake.license_plate(),
+    "veiculo_ano": fake.vehicle_year(),
+    "veiculo_fabricante": fake.vehicle_make(),
+    "veiculo_modelo": fake.vehicle_model()
+  }
+  
+  print(r.xadd("veiculo", output))
+  time.sleep(random.randint(1, 10))

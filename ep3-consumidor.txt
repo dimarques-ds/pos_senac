@@ -1,0 +1,45 @@
+import redis
+import json
+import time
+
+r = redis.Redis(host="redis-19208.c12.us-east-1-4.ec2.cloud.redislabs.com", port=19208, db=0, password="Senac_2020")
+
+
+if r.xlen("veiculos-consolidado2") == 0:
+    last_id = r.xinfo_stream("veiculo")['last-entry'][0]
+    first_id = r.xinfo_stream("veiculo")['first-entry'][0]
+    first = int(first_id.decode("utf-8").split("-")[0])
+    fabricacao={}
+else:
+    fabricacao = r.xinfo_stream("veiculos-consolidado2")['last-entry'][1]
+    last = int(fabricacao[b'ultimo_timestamp'].decode("utf-8").split("-")[0])
+    print(fabricacao)
+    first = last
+
+count = 0
+loops = 0
+next_id = first
+
+ 
+
+while(True):
+    dados = r.xrange("veiculo", min=next_id, count=2)
+    if len(dados) == 0:
+        break
+    count += len(dados)
+
+    next_id = dados[-1][0].decode("utf-8")
+    next_id = next_id.split("-")[0]
+    next_id = next_id + "-1"
+
+    loops += 1
+
+    for item in dados:
+        ano_veic =  item[1][b'veiculo_ano'].decode("utf-8")
+        if ano_veic not in fabricacao:
+          fabricacao[ano_veic] = 1
+        else:
+          fabricacao[ano_veic]+=1
+
+fabricacao["ultimo_timestamp"]= next_id
+r.xadd("veiculos-consolidado2", fabricacao)
